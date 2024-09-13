@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/dustin/go-humanize"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/storer"
 	"golang.org/x/term"
 )
 
@@ -84,15 +84,20 @@ func getBranches(repo *git.Repository, count int) (*List, error) {
 			isHead:  isHead,
 		})
 
-		if len(branches) >= count {
-			return storer.ErrStop
-		}
-
 		return nil
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("iter.ForEach: %w", err)
+	}
+
+	sort.Slice(branches, func(i, j int) bool {
+		return branches[i].date.After(branches[j].date)
+	})
+
+	// truncate to first n
+	if len(branches) > count {
+		branches = branches[:count]
 	}
 
 	return &List{

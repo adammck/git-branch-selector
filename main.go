@@ -111,18 +111,17 @@ func termWidth() int {
 
 func printBranches(list *List) uint8 {
 	// build the contents of the table, unaligned
-	var rows [][4]string
-	for i, branch := range list.branches {
-		indicator := " "
-		if i == list.selected {
-			indicator = "*"
-		}
-
-		rows = append(rows, [4]string{indicator, branch.name, branch.when(), branch.subject})
+	var rows [][3]string
+	for _, branch := range list.branches {
+		rows = append(rows, [3]string{
+			branch.name,
+			branch.when(),
+			branch.subject,
+		})
 	}
 
 	// find the maximum width for each column
-	var cw [4]int
+	var cw [3]int
 	for _, row := range rows {
 		for c, col := range row {
 			if len(col) > cw[c] {
@@ -133,14 +132,12 @@ func printBranches(list *List) uint8 {
 
 	tw := termWidth()
 
-	// print the table with aligned columns
+	// print the table with aligned columns, leaving space for asterisk
 	for _, row := range rows {
-
-		line := fmt.Sprintf("%-*s  %-*s  |  %-*s  |  %-*s",
+		line := fmt.Sprintf("  %-*s  |  %-*s  |  %-*s",
 			cw[0], row[0], // indicator
 			cw[1], row[1], // branch name
-			cw[2], row[2], // when
-			cw[3], row[3]) // msg
+			cw[2], row[2]) // when
 
 		if len(line) > tw {
 			line = line[:tw]
@@ -152,6 +149,18 @@ func printBranches(list *List) uint8 {
 	}
 
 	return uint8(len(rows))
+}
+
+func printSelected(list *List) {
+	fmt.Printf("\x1b[%dA", len(list.branches))
+
+	for i := 0; i < len(list.branches); i++ {
+		indicator := " "
+		if i == list.selected {
+			indicator = "*"
+		}
+		fmt.Printf("%s\r\n", indicator)
+	}
 }
 
 func main() {
@@ -213,18 +222,14 @@ func prompt(count int) string {
 		}
 	}()
 
-	var n uint8
+	// print the table containing all the info. we only do this once, because
+	// the only thing that changes every keypress is the position of the
+	// selected marker.
+	printBranches(branches)
 
 	for {
-		// move up to the start of the previous output, to overwrite it.
-		if n > 0 {
-			_, err = t.Output().WriteString(fmt.Sprintf("\x1b[%dA", n))
-			if err != nil {
-				log.Fatalf("t.Output().WriteString: %s", err)
-			}
-		}
-
-		n = printBranches(branches)
+		// erase any previously-printed markers, and print the current one.
+		printSelected(branches)
 
 		// read one keypress
 		// damn this is complicated

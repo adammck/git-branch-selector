@@ -172,6 +172,11 @@ func main() {
 	count := flag.Int("n", 10, "number of branches")
 	flag.Parse()
 
+	// just to avoid any confusion.
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		log.Fatal("stdout is not a tty")
+	}
+
 	branch := prompt(*count)
 	if branch == "" {
 		return

@@ -139,7 +139,7 @@ func printBranches(list *List) uint8 {
 
 	// print the table with aligned columns, leaving space for asterisk
 	for _, row := range rows {
-		line := fmt.Sprintf("  %-*s  |  %-*s  |  %-*s",
+		line := fmt.Sprintf("   %-*s  |  %-*s  |  %-*s",
 			cw[0], row[0], // indicator
 			cw[1], row[1], // branch name
 			cw[2], row[2]) // when
@@ -160,9 +160,9 @@ func printSelected(list *List) {
 	fmt.Printf("\x1b[%dA", len(list.branches))
 
 	for i := 0; i < len(list.branches); i++ {
-		indicator := " "
+		indicator := "   "
 		if i == list.selected {
-			indicator = "*"
+			indicator = " * "
 		}
 		fmt.Printf("%s\r\n", indicator)
 	}

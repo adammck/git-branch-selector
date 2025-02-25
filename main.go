@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
@@ -168,6 +169,27 @@ func printSelected(list *List) {
 	}
 }
 
+func getRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("os.Getwd: %w", err)
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// similar message as output by git
+			return "", fmt.Errorf("not a git repository (or any of the parent directories)")
+		}
+
+		dir = parent
+	}
+}
+
 func main() {
 	count := flag.Int("n", 10, "number of branches")
 	flag.Parse()
@@ -199,7 +221,12 @@ func main() {
 }
 
 func prompt(count int) string {
-	repo, err := git.PlainOpen(".")
+	repoRoot, err := getRoot()
+	if err != nil {
+		log.Fatalf("getRoot: %v\n", err)
+	}
+
+	repo, err := git.PlainOpen(repoRoot)
 	if err != nil {
 		log.Fatalf("git.PlainOpen: %s", err)
 	}
